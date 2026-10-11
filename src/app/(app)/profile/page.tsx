@@ -1,9 +1,12 @@
 "use client";
 
+import { useClerk } from "@clerk/nextjs";
 import { LogOut, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import BottomSheet from "@/components/BottomSheet";
-import { deleteAccount, saveProfile, signOut, useStore } from "@/lib/store";
+import { deleteAccountAction } from "@/app/actions";
+import { resetStore, saveProfile, useStore } from "@/lib/store";
 import { GENDERS, type Gender } from "@/lib/types";
 
 const toNumber = (v: string) => (v === "" ? null : Number(v));
@@ -13,6 +16,26 @@ export default function ProfilePage() {
   const [form, setForm] = useState(profile);
   const [saved, setSaved] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+  const { signOut } = useClerk();
+  const router = useRouter();
+
+  const deleteAccount = async () => {
+    setDeleting(true);
+    setError("");
+    try {
+      await deleteAccountAction();
+    } catch {
+      setDeleting(false);
+      setConfirmingDelete(false);
+      setError("Could not delete your account. Please try again.");
+      return;
+    }
+    resetStore();
+    // the session died with the user, so signOut may reject; leave either way
+    await signOut({ redirectUrl: "/login" }).catch(() => router.replace("/login"));
+  };
 
   const set = (patch: Partial<typeof form>) => {
     setSaved(false);
@@ -30,8 +53,11 @@ export default function ProfilePage() {
         className="card space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          saveProfile({ ...form, name: form.name.trim() });
-          setSaved(true);
+          setError("");
+          saveProfile({ ...form, name: form.name.trim() }).then(
+            () => setSaved(true),
+            () => setError("Could not save your profile. Please try again."),
+          );
         }}
       >
         <div>
@@ -118,8 +144,18 @@ export default function ProfilePage() {
         </button>
       </form>
 
+      {error && (
+        <p role="alert" className="rounded-lg border border-foreground px-3 py-2 text-sm">
+          {error}
+        </p>
+      )}
+
       <div className="space-y-3">
-        <button type="button" className="btn w-full" onClick={signOut}>
+        <button
+          type="button"
+          className="btn w-full"
+          onClick={() => signOut({ redirectUrl: "/login" })}
+        >
           <LogOut size={16} />
           Sign out
         </button>
@@ -139,8 +175,13 @@ export default function ProfilePage() {
             <button type="button" className="btn" onClick={() => setConfirmingDelete(false)}>
               Cancel
             </button>
-            <button type="button" className="btn btn-primary" onClick={deleteAccount}>
-              Delete everything
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={deleteAccount}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting…" : "Delete everything"}
             </button>
           </div>
         </BottomSheet>
