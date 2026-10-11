@@ -65,7 +65,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={`flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors ${
-                  active ? "bg-foreground text-background" : "text-muted hover:bg-surface"
+                  active ? "bg-accent text-accent-foreground" : "text-muted hover:bg-surface"
                 }`}
               >
                 <Icon size={18} />
@@ -99,7 +99,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               href={href}
               aria-current={active ? "page" : undefined}
               className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 text-xs ${
-                active ? "font-semibold text-foreground" : "text-muted"
+                active ? "font-semibold text-accent-text" : "text-muted"
               }`}
             >
               <Icon size={20} strokeWidth={active ? 2.5 : 2} />

@@ -110,7 +110,7 @@ export default function ExerciseNameInput({ id, value, known, onChange, onPick }
                 onClick={() => choose(matches.length)}
               >
                 <span className="truncate">{value.trim()}</span>
-                <span className="flex shrink-0 items-center gap-1 rounded-full border border-foreground px-2 py-0.5 text-xs font-medium">
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
                   <Plus size={12} />
                   New
                 </span>

@@ -23,16 +23,16 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f4f5" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
 
-// keeps Clerk's sign-in UI in the app's black and white theme, light or dark
+// keeps Clerk's sign-in UI in the app's colours, light or dark
 const clerkAppearance = {
   variables: {
-    colorPrimary: "var(--foreground)",
-    colorPrimaryForeground: "var(--background)",
+    colorPrimary: "var(--accent)",
+    colorPrimaryForeground: "var(--accent-foreground)",
     colorBackground: "var(--background)",
     colorForeground: "var(--foreground)",
     colorMutedForeground: "var(--muted)",

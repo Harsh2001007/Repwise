@@ -66,7 +66,7 @@ export default function DatePicker({ value, onChange, marked }: Props) {
       </div>
 
       {open && (
-        <div className="card absolute inset-x-0 top-full z-30 mt-2 animate-fade-in shadow-xl">
+        <div className="card absolute inset-x-0 top-full z-30 mt-2 animate-fade-in border-border shadow-xl">
           <div className="mb-3 flex items-center justify-between">
             <button
               type="button"
@@ -114,9 +114,9 @@ export default function DatePicker({ value, onChange, marked }: Props) {
                   }}
                   className={`relative flex aspect-square cursor-pointer items-center justify-center rounded-lg text-sm disabled:cursor-not-allowed disabled:opacity-25 ${
                     selected
-                      ? "bg-foreground font-semibold text-background"
+                      ? "bg-accent font-semibold text-accent-foreground"
                       : date === today
-                        ? "border border-foreground"
+                        ? "border border-accent"
                         : "hover:bg-surface"
                   }`}
                 >
@@ -124,7 +124,7 @@ export default function DatePicker({ value, onChange, marked }: Props) {
                   {marked.has(date) && (
                     <span
                       className={`absolute bottom-1 size-1 rounded-full ${
-                        selected ? "bg-background" : "bg-foreground"
+                        selected ? "bg-accent-foreground" : "bg-accent"
                       }`}
                     />
                   )}

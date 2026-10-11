@@ -3,7 +3,10 @@
 import { ChevronRight, Download } from "lucide-react";
 import { useState } from "react";
 import BottomSheet from "@/components/BottomSheet";
+import SetRows from "@/components/SetRows";
+import WeekStrip from "@/components/WeekStrip";
 import { addDays, formatDate, formatTime, todayISO } from "@/lib/date";
+import { trainedDates } from "@/lib/stats";
 import { useStore } from "@/lib/store";
 import { loggedExercises, workoutTitle } from "@/lib/workout";
 
@@ -54,6 +57,8 @@ export default function HistoryPage() {
         </p>
       )}
 
+      <WeekStrip trained={trainedDates(workouts)} />
+
       {history.length === 0 ? (
         <div className="card py-12 text-center">
           <p className="font-semibold">Nothing here yet</p>
@@ -61,18 +66,23 @@ export default function HistoryPage() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {history.map((workout) => {
+          {history.map((workout, i) => {
             const exercises = loggedExercises(workout);
             const sets = exercises.reduce((n, e) => n + e.sets.length, 0);
             return (
-              <li key={workout.id}>
+              <li
+                key={workout.id}
+                className="animate-rise"
+                // stagger the first few so the list cascades in
+                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+              >
                 <button
                   type="button"
                   onClick={() => setOpenId(workout.id)}
                   className="card flex w-full cursor-pointer items-center justify-between gap-3 text-left transition-colors hover:bg-surface"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-semibold">{workoutTitle(workout)}</p>
+                    <p className="truncate text-lg font-semibold">{workoutTitle(workout)}</p>
                     <p className="mt-0.5 text-sm text-muted">
                       {formatDate(workout.date)} · {formatTime(workout.startedAt)}
                     </p>
@@ -99,21 +109,14 @@ export default function HistoryPage() {
             {loggedExercises(open).map((exercise) => (
               <div key={exercise.id}>
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="truncate font-semibold">{exercise.name}</h3>
-                  <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted">
+                  <h3 className="truncate text-lg font-semibold">{exercise.name}</h3>
+                  <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-xs text-muted">
                     {exercise.targetPart}
                   </span>
                 </div>
-                <ul className="mt-2 divide-y divide-border border-y border-border text-sm">
-                  {exercise.sets.map((set, i) => (
-                    <li key={set.id} className="flex justify-between py-2">
-                      <span className="text-muted">Set {i + 1}</span>
-                      <span className="font-mono">
-                        {set.weight} {set.unit} × {set.reps}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-2 border-y border-border">
+                  <SetRows sets={exercise.sets} />
+                </div>
               </div>
             ))}
           </div>

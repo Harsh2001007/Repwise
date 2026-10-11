@@ -13,6 +13,7 @@ import {
   type WeightAdvice,
 } from "@/lib/workout";
 import ExerciseNameInput from "./ExerciseNameInput";
+import SetRows from "./SetRows";
 
 interface Props {
   exercise: Exercise;
@@ -25,23 +26,31 @@ interface Props {
 
 const toNumber = (v: string) => (v === "" ? null : Number(v));
 
-const ADVICE: Record<WeightAdvice, { icon: typeof Equal; text: string }> = {
+const LOGGED_FLASH_MS = 1600;
+
+const ADVICE: Record<WeightAdvice, { icon: typeof Equal; color: string; text: string }> = {
   increase: {
     icon: ArrowUp,
+    color: "text-up",
     text: `You hit ${REPS_TO_INCREASE_AT}+ reps. Go heavier on this set.`,
   },
   same: {
     icon: Equal,
+    color: "text-same",
     text: `${REPS_TO_DROP_BELOW}-${REPS_TO_INCREASE_AT - 1} reps. Keep the same weight on this set.`,
   },
   decrease: {
     icon: ArrowDown,
+    color: "text-down",
     text: `Under ${REPS_TO_DROP_BELOW} reps. Drop the weight on this set.`,
   },
 };
 
 export default function ExerciseCard({ exercise, index, known, onChange, onDelete }: Props) {
   const [error, setError] = useState("");
+  // drive the short "tick" on a set and the success flash on the card
+  const [poppedSetId, setPoppedSetId] = useState("");
+  const [justLogged, setJustLogged] = useState(false);
 
   const confirmDelete = () => {
     const label = exercise.name.trim() || `Exercise ${index + 1}`;
@@ -50,13 +59,21 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
 
   if (exercise.logged) {
     return (
-      <section className="card">
+      <section className={`card ${justLogged ? "animate-pop" : ""}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate font-semibold">{exercise.name}</h3>
-            <span className="mt-1 inline-block rounded-full border border-border px-2 py-0.5 text-xs text-muted">
-              {exercise.targetPart}
-            </span>
+            <h3 className="truncate text-lg font-semibold">{exercise.name}</h3>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-muted">
+                {exercise.targetPart}
+              </span>
+              {justLogged && (
+                <span className="flex animate-fade-in items-center gap-1 text-xs font-semibold text-up">
+                  <Check size={14} strokeWidth={3} />
+                  Logged
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -83,16 +100,9 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
             </button>
           </div>
         </div>
-        <ul className="mt-3 divide-y divide-border border-t border-border text-sm">
-          {exercise.sets.map((set, i) => (
-            <li key={set.id} className="flex justify-between py-2">
-              <span className="text-muted">Set {i + 1}</span>
-              <span className="font-mono">
-                {set.weight} {set.unit} × {set.reps}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-3 border-t border-border">
+          <SetRows sets={exercise.sets} />
+        </div>
       </section>
     );
   }
@@ -121,6 +131,7 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
       return;
     }
     setError("");
+    setPoppedSetId(set.id);
     // the next row starts from the same weight, since most sets repeat it
     onChange((e) => ({
       ...e,
@@ -143,6 +154,8 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
       return setError("Every set needs a weight and a whole number of reps.");
     }
     setError("");
+    setJustLogged(true);
+    setTimeout(() => setJustLogged(false), LOGGED_FLASH_MS);
     // a fully filled-in last row counts as a set; an unfinished one is dropped
     onChange((e) => ({
       ...e,
@@ -158,7 +171,7 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
   };
 
   return (
-    <section className="card border-foreground">
+    <section className="card animate-rise border-accent">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold">Exercise {index + 1}</h3>
         <button type="button" className="icon-btn" aria-label="Delete exercise" onClick={confirmDelete}>
@@ -219,15 +232,17 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
         {exercise.sets.map((set, i) => (
           <div
             key={set.id}
-            className="grid grid-cols-[1.25rem_1fr_auto_1fr_2.5rem] items-center gap-2"
+            className={`grid grid-cols-[1.25rem_1fr_auto_1fr_2.5rem] items-center gap-2 ${
+              set.id === poppedSetId ? "animate-pop" : set.done ? "" : "animate-rise"
+            }`}
           >
             {!set.done && advice ? (
-              <advice.icon size={18} strokeWidth={2.5} aria-label={advice.text} />
+              <advice.icon size={20} strokeWidth={3} className={advice.color} aria-label={advice.text} />
             ) : (
               <span className="text-sm text-muted">{i + 1}</span>
             )}
             <input
-              className="field px-2"
+              className="field px-2 text-center text-lg font-bold tabular-nums"
               type="number"
               inputMode="decimal"
               min={0}
@@ -245,7 +260,7 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
                   aria-pressed={set.unit === unit}
                   onClick={() => changeUnit(set.id, unit)}
                   className={`flex-1 cursor-pointer ${
-                    set.unit === unit ? "bg-foreground font-semibold text-background" : "text-muted"
+                    set.unit === unit ? "bg-accent font-semibold text-accent-foreground" : "text-muted"
                   }`}
                 >
                   {unit}
@@ -253,7 +268,7 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
               ))}
             </div>
             <input
-              className="field px-2"
+              className="field px-2 text-center text-lg font-bold tabular-nums"
               type="number"
               inputMode="numeric"
               min={1}
@@ -278,7 +293,7 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
             ) : (
               <button
                 type="button"
-                className="icon-btn border-foreground bg-foreground text-background hover:bg-foreground hover:opacity-85"
+                className="icon-btn border-accent bg-accent text-accent-foreground hover:bg-accent hover:opacity-85"
                 aria-label={`Log set ${i + 1}`}
                 onClick={() => addSet(set)}
               >
@@ -288,7 +303,7 @@ export default function ExerciseCard({ exercise, index, known, onChange, onDelet
           </div>
         ))}
         {advice ? (
-          <p className="flex items-center gap-1.5 text-xs font-medium">
+          <p className={`flex items-center gap-1.5 text-xs font-semibold ${advice.color}`}>
             <advice.icon size={14} strokeWidth={2.5} aria-hidden="true" />
             {advice.text}
           </p>
