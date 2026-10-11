@@ -21,3 +21,33 @@ export function isValidSet(weight: number | null, reps: number | null): boolean 
     reps > 0
   );
 }
+
+export interface KnownExercise {
+  name: string;
+  targetPart: Exercise["targetPart"];
+}
+
+/** Every distinct exercise the user has logged, most recently used first. */
+export function knownExercises(workouts: Workout[]): KnownExercise[] {
+  const seen = new Map<string, KnownExercise>();
+  const newestFirst = [...workouts].sort((a, b) => b.date.localeCompare(a.date));
+  for (const workout of newestFirst) {
+    for (const { name, targetPart } of loggedExercises(workout)) {
+      const key = name.trim().toLowerCase();
+      if (key && !seen.has(key)) seen.set(key, { name: name.trim(), targetPart });
+    }
+  }
+  return [...seen.values()];
+}
+
+// Rep range that decides what the next set should do with the weight
+export const REPS_TO_DROP_BELOW = 8;
+export const REPS_TO_INCREASE_AT = 12;
+
+export type WeightAdvice = "increase" | "same" | "decrease";
+
+export function weightAdvice(reps: number): WeightAdvice {
+  if (reps >= REPS_TO_INCREASE_AT) return "increase";
+  if (reps < REPS_TO_DROP_BELOW) return "decrease";
+  return "same";
+}

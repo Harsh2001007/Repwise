@@ -1,21 +1,46 @@
 "use client";
 
-import { Check, Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Equal, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { newSet, setPreferredUnit } from "@/lib/store";
 import { TARGET_PARTS, type Exercise, type SetEntry, type TargetPart, type WeightUnit } from "@/lib/types";
-import { isValidSet } from "@/lib/workout";
+import {
+  isValidSet,
+  REPS_TO_DROP_BELOW,
+  REPS_TO_INCREASE_AT,
+  weightAdvice,
+  type KnownExercise,
+  type WeightAdvice,
+} from "@/lib/workout";
+import ExerciseNameInput from "./ExerciseNameInput";
 
 interface Props {
   exercise: Exercise;
   index: number;
+  /** exercises logged before, offered as name suggestions */
+  known: KnownExercise[];
   onChange: (fn: (e: Exercise) => Exercise) => void;
   onDelete: () => void;
 }
 
 const toNumber = (v: string) => (v === "" ? null : Number(v));
 
-export default function ExerciseCard({ exercise, index, onChange, onDelete }: Props) {
+const ADVICE: Record<WeightAdvice, { icon: typeof Equal; text: string }> = {
+  increase: {
+    icon: ArrowUp,
+    text: `You hit ${REPS_TO_INCREASE_AT}+ reps. Go heavier on this set.`,
+  },
+  same: {
+    icon: Equal,
+    text: `${REPS_TO_DROP_BELOW}-${REPS_TO_INCREASE_AT - 1} reps. Keep the same weight on this set.`,
+  },
+  decrease: {
+    icon: ArrowDown,
+    text: `Under ${REPS_TO_DROP_BELOW} reps. Drop the weight on this set.`,
+  },
+};
+
+export default function ExerciseCard({ exercise, index, known, onChange, onDelete }: Props) {
   const [error, setError] = useState("");
 
   const confirmDelete = () => {
@@ -73,6 +98,9 @@ export default function ExerciseCard({ exercise, index, onChange, onDelete }: Pr
   }
 
   const doneCount = exercise.sets.filter((s) => s.done).length;
+  // the set being entered is advised by the reps of the last logged one
+  const lastDone = exercise.sets.findLast((s) => s.done);
+  const advice = lastDone?.reps != null ? ADVICE[weightAdvice(lastDone.reps)] : null;
 
   const patchSet = (id: string, patch: Partial<SetEntry>) => {
     setError("");
@@ -118,7 +146,10 @@ export default function ExerciseCard({ exercise, index, onChange, onDelete }: Pr
     // a fully filled-in last row counts as a set; an unfinished one is dropped
     onChange((e) => ({
       ...e,
-      name: e.name.trim(),
+      // reuse the spelling of an earlier log so one exercise keeps one name
+      name:
+        known.find((k) => k.name.toLowerCase() === e.name.trim().toLowerCase())?.name ??
+        e.name.trim(),
       logged: true,
       sets: e.sets
         .filter((s) => s.done || isValidSet(s.weight, s.reps))
@@ -140,14 +171,17 @@ export default function ExerciseCard({ exercise, index, onChange, onDelete }: Pr
           <label className="label" htmlFor={`name-${exercise.id}`}>
             Exercise name *
           </label>
-          <input
+          <ExerciseNameInput
             id={`name-${exercise.id}`}
-            className="field"
-            placeholder="e.g. Bench press"
             value={exercise.name}
-            onChange={(ev) => {
+            known={known}
+            onChange={(name) => {
               setError("");
-              onChange((e) => ({ ...e, name: ev.target.value }));
+              onChange((e) => ({ ...e, name }));
+            }}
+            onPick={(picked) => {
+              setError("");
+              onChange((e) => ({ ...e, name: picked.name, targetPart: picked.targetPart }));
             }}
           />
         </div>
@@ -187,7 +221,11 @@ export default function ExerciseCard({ exercise, index, onChange, onDelete }: Pr
             key={set.id}
             className="grid grid-cols-[1.25rem_1fr_auto_1fr_2.5rem] items-center gap-2"
           >
-            <span className="text-sm text-muted">{i + 1}</span>
+            {!set.done && advice ? (
+              <advice.icon size={18} strokeWidth={2.5} aria-label={advice.text} />
+            ) : (
+              <span className="text-sm text-muted">{i + 1}</span>
+            )}
             <input
               className="field px-2"
               type="number"
@@ -249,9 +287,16 @@ export default function ExerciseCard({ exercise, index, onChange, onDelete }: Pr
             )}
           </div>
         ))}
-        <p className="text-xs text-muted">
-          Tap <Check size={12} className="inline" /> to log a set. The next one appears below it.
-        </p>
+        {advice ? (
+          <p className="flex items-center gap-1.5 text-xs font-medium">
+            <advice.icon size={14} strokeWidth={2.5} aria-hidden="true" />
+            {advice.text}
+          </p>
+        ) : (
+          <p className="text-xs text-muted">
+            Tap <Check size={12} className="inline" /> to log a set. The next one appears below it.
+          </p>
+        )}
       </div>
 
       {error && (

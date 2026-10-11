@@ -13,7 +13,7 @@ import {
   updateExercise,
   useStore,
 } from "@/lib/store";
-import { loggedExercises } from "@/lib/workout";
+import { knownExercises, loggedExercises } from "@/lib/workout";
 
 export default function LoggerPage() {
   const { workouts } = useStore();
@@ -24,6 +24,8 @@ export default function LoggerPage() {
     () => new Set(workouts.filter((w) => loggedExercises(w).length > 0).map((w) => w.date)),
     [workouts],
   );
+
+  const known = useMemo(() => knownExercises(workouts), [workouts]);
 
   return (
     <div className="space-y-5">
@@ -64,6 +66,7 @@ export default function LoggerPage() {
               key={exercise.id}
               exercise={exercise}
               index={i}
+              known={known}
               onChange={(fn) => updateExercise(workout.id, exercise.id, fn)}
               onDelete={() => deleteExercise(workout.id, exercise.id)}
             />
